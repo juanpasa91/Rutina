@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Rutina">
+<meta name="theme-color" content="#0D0D0D">
+<title>Rutina · JP Salazar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0D0D0D;
+    --surface: #181818;
+    --surface2: #222222;
+    --border: #2A2A2A;
+    --red: #E63946;
+    --red-dim: rgba(230,57,70,0.15);
+    --white: #F5F5F5;
+    --gray: #888;
+    --gray2: #555;
+    --green: #2ECC71;
+    --nav-h: 68px;
+    --header-h: 112px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); color: var(--white); font-family: 'Barlow', sans-serif; overflow: hidden; }
+
+  /* ── HEADER ── */
+  #header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: env(safe-area-inset-top, 0) 0 0;
+  }
+  #header-top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px 8px;
+  }
+  #header h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 22px; font-weight: 800; letter-spacing: 0.5px;
+    color: var(--white);
+  }
+  #header h1 span { color: var(--red); }
+  #week-selector {
+    display: flex; align-items: center; gap: 6px;
+  }
+  #week-selector label {
+    font-size: 11px; color: var(--gray); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  #week-select {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--white); font-family: 'Barlow Condensed', sans-serif;
+    font-size: 14px; font-weight: 700; padding: 4px 8px;
+    border-radius: 6px; outline: none; cursor: pointer;
+  }
+
+  /* Tabs días */
+  #day-tabs {
+    display: flex; overflow-x: auto; gap: 0;
+    padding: 0 12px 10px;
+    scrollbar-width: none;
+  }
+  #day-tabs::-webkit-scrollbar { display: none; }
+  .day-tab {
+    flex-shrink: 0; padding: 6px 14px;
+    border-radius: 20px; border: 1px solid var(--border);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px; font-weight: 700; letter-spacing: 0.5px;
+    color: var(--gray); cursor: pointer;
+    margin-right: 6px;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .day-tab.active {
+    color: var(--white);
+    border-color: transparent;
+  }
+  .day-tab.done-tab::after {
+    content: '✓';
+    position: absolute; top: -4px; right: -4px;
+    background: var(--green); color: #000;
+    font-size: 8px; font-weight: 800;
+    width: 14px; height: 14px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    line-height: 14px; text-align: center;
+  }
+
+  /* ── MAIN SCROLL ── */
+  #main {
+    position: fixed;
+    top: var(--header-h);
+    bottom: 0;
+    left: 0; right: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 12px 12px 20px;
+  }
+
+  /* ── DAY HEADER ── */
+  .day-header {
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .day-header-left h2 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 28px; font-weight: 800; letter-spacing: 0.5px;
+    color: var(--white);
+  }
+  .day-header-left p {
+    font-size: 12px; color: rgba(255,255,255,0.6); font-weight: 500; margin-top: 2px;
+  }
+  .day-progress-ring { position: relative; width: 54px; height: 54px; }
+  .day-progress-ring svg { transform: rotate(-90deg); }
+  .ring-bg { fill: none; stroke: rgba(255,255,255,0.15); stroke-width: 4; }
+  .ring-fill { fill: none; stroke: white; stroke-width: 4; stroke-linecap: round;
+    transition: stroke-dashoffset 0.4s ease; }
+  .ring-text {
+    position: absolute; inset: 0; display: flex;
+    align-items: center; justify-content: center;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px; font-weight: 800; color: white;
+  }
+
+  /* Semana info bar */
+  .week-info-bar {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .week-badge {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px; font-weight: 800; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--red);
+    background: var(--red-dim); padding: 3px 8px; border-radius: 4px;
+    white-space: nowrap;
+  }
+  .week-info-bar p { font-size: 12px; color: var(--gray); line-height: 1.4; }
+
+  /* ── EJERCICIO CARD ── */
+  .ej-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 8px;
+    overflow: hidden; transition: border-color 0.2s;
+  }
+  .ej-card.checked { border-color: var(--green); }
+  .ej-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 14px; cursor: pointer;
+  }
+  .ej-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 18px; font-weight: 800;
+    color: var(--gray2); min-width: 22px; text-align: center;
+    transition: color 0.2s;
+  }
+  .ej-card.checked .ej-num { color: var(--green); }
+  .ej-info { flex: 1; }
+  .ej-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 16px; font-weight: 700; color: var(--white); line-height: 1.2;
+    transition: color 0.2s;
+  }
+  .ej-card.checked .ej-name { color: rgba(255,255,255,0.5); text-decoration: line-through; }
+  .ej-reps { font-size: 11.5px; color: var(--gray); margin-top: 2px; }
+  .ej-check {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 2px solid var(--border); background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+  }
+  .ej-card.checked .ej-check {
+    background: var(--green); border-color: var(--green);
+  }
+  .ej-check-icon { display: none; }
+  .ej-card.checked .ej-check-icon { display: block; }
+  .ej-expand { font-size: 11px; color: var(--gray); transition: transform 0.2s; }
+  .ej-card.open .ej-expand { transform: rotate(180deg); }
+
+  /* Series detail */
+  .ej-detail {
+    display: none; border-top: 1px solid var(--border);
+    padding: 0 14px 14px;
+  }
+  .ej-card.open .ej-detail { display: block; }
+
+  .series-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  .series-table th {
+    font-size: 10px; font-weight: 700; color: var(--gray);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    text-align: left; padding: 0 0 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .series-table td {
+    padding: 7px 4px; font-size: 12px; color: rgba(255,255,255,0.8);
+    border-bottom: 1px solid var(--border);
+    vertical-align: top; line-height: 1.4;
+  }
+  .series-table tr:last-child td { border-bottom: none; }
+  .serie-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px; font-weight: 700;
+    color: var(--red); white-space: nowrap;
+    padding-right: 10px;
+  }
+
+  /* Notas */
+  .tip-box {
+    background: rgba(230,57,70,0.08); border: 1px solid rgba(230,57,70,0.25);
+    border-radius: 8px; padding: 10px 12px; margin-top: 10px;
+    font-size: 11.5px; color: rgba(255,255,255,0.65); line-height: 1.5;
+  }
+  .tip-box strong { color: var(--red); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 3px; }
+
+  /* Reset day button */
+  .reset-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    margin-top: 14px;
+    background: transparent; border: 1px solid var(--border);
+    color: var(--gray); font-family: 'Barlow', sans-serif;
+    font-size: 13px; font-weight: 500;
+    padding: 10px; border-radius: 8px; width: 100%;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .reset-btn:active { background: var(--surface2); }
+
+  /* Glosario */
+  .glosario-section { margin-bottom: 8px; }
+  .glosario-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px; font-weight: 800; color: var(--gray);
+    text-transform: uppercase; letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .glos-item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px; margin-bottom: 6px;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .glos-term {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px; font-weight: 800; color: var(--red);
+    min-width: 80px; padding-top: 1px;
+  }
+  .glos-def { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.5; }
+
+  /* Completed overlay */
+  .day-done-banner {
+    display: none;
+    background: linear-gradient(135deg, rgba(46,204,113,0.12), rgba(46,204,113,0.04));
+    border: 1px solid rgba(46,204,113,0.3);
+    border-radius: 10px; padding: 14px 16px;
+    margin-bottom: 12px; text-align: center;
+  }
+  .day-done-banner.show { display: block; }
+  .day-done-banner h3 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 20px; font-weight: 800; color: var(--green);
+  }
+  .day-done-banner p { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 3px; }
+
+  /* Hidden pages */
+  .day-page { display: none; }
+  .day-page.active { display: block; }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .ej-card { animation: fadeUp 0.25s ease both; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <div id="header-top">
+    <h1>RUTINA <span>JP</span></h1>
+    <div id="week-selector">
+      <label>SEMANA</label>
+      <select id="week-select" onchange="setWeek(this.value)">
+        <option value="0">1</option>
+        <option value="1">2</option>
+        <option value="2">3</option>
+        <option value="3">4</option>
+        <option value="4">5-6</option>
+        <option value="5">Descarga</option>
+      </select>
+    </div>
+  </div>
+  <div id="day-tabs">
+    <div class="day-tab active" onclick="showDay(0)" id="tab-0" style="background:#C0392B">💪 Upper</div>
+    <div class="day-tab" onclick="showDay(1)" id="tab-1">🦵 Leg A</div>
+    <div class="day-tab" onclick="showDay(2)" id="tab-2">🔙 Pull</div>
+    <div class="day-tab" onclick="showDay(3)" id="tab-3">🔛 Push</div>
+    <div class="day-tab" onclick="showDay(4)" id="tab-4">🦵 Leg B</div>
+    <div class="day-tab" onclick="showDay(5)" id="tab-5" style="background:#333">📖 Info</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+<!-- ═══════════════════════════════════════════════════════
+     DÍA 1: UPPER
+════════════════════════════════════════════════════════ -->
+<div class="day-page active" id="page-0">
+  <div class="day-header" style="background:linear-gradient(135deg,#7B0D1E,#C0392B)">
+    <div class="day-header-left">
+      <h2>💪 UPPER</h2>
+      <p>Empuje + Jalón + Brazos + Abdomen</p>
+    </div>
+    <div class="day-progress-ring">
+      <svg width="54" height="54" viewBox="0 0 54 54">
+        <circle class="ring-bg" cx="27" cy="27" r="23"/>
+        <circle class="ring-fill" id="ring-0" cx="27" cy="27" r="23" stroke-dasharray="144.5" stroke-dashoffset="144.5"/>
+      </svg>
+      <div class="ring-text" id="ring-text-0">0/10</div>
+    </div>
+  </div>
+  <div class="day-done-banner" id="done-0"><h3>🔥 ¡Día completado!</h3><p>Buen trabajo. Descansa y recupera.</p></div>
+  <div id="week-bar-0" class="week-info-bar">
+    <span class="week-badge">S1</span>
+    <p id="week-desc-0">Encuentra tus pesos base. Prioriza técnica sobre carga.</p>
+  </div>
+
+  <div id="ejs-0">
+  <!-- Ejercicios Upper -->
+  </div>
+  <button class="reset-btn" onclick="resetDay(0)">↺ Reiniciar día</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     DÍA 2: LEG A
+════════════════════════════════════════════════════════ -->
+<div class="day-page" id="page-1">
+  <div class="day-header" style="background:linear-gradient(135deg,#0D47A1,#1565C0)">
+    <div class="day-header-left">
+      <h2>🦵 LEG A</h2>
+      <p>Pantorrillas · Cuádriceps · Glúteo</p>
+    </div>
+    <div class="day-progress-ring">
+      <svg width="54" height="54" viewBox="0 0 54 54">
+        <circle class="ring-bg" cx="27" cy="27" r="23"/>
+        <circle class="ring-fill" id="ring-1" cx="27" cy="27" r="23" stroke-dasharray="144.5" stroke-dashoffset="144.5"/>
+      </svg>
+      <div class="ring-text" id="ring-text-1">0/6</div>
+    </div>
+  </div>
+  <div class="day-done-banner" id="done-1"><h3>🔥 ¡Día completado!</h3><p>Buen trabajo. Descansa y recupera.</p></div>
+  <div id="week-bar-1" class="week-info-bar">
+    <span class="week-badge">S1</span>
+    <p id="week-desc-1">Encuentra tus pesos base. Prioriza técnica sobre carga.</p>
+  </div>
+  <div id="ejs-1"></div>
+  <button class="reset-btn" onclick="resetDay(1)">↺ Reiniciar día</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     DÍA 3: PULL
+════════════════════════════════════════════════════════ -->
+<div class="day-page" id="page-2">
+  <div class="day-header" style="background:linear-gradient(135deg,#1B5E20,#2E7D32)">
+    <div class="day-header-left">
+      <h2>🔙 PULL</h2>
+      <p>Espalda · Bíceps · Abdomen</p>
+    </div>
+    <div class="day-progress-ring">
+      <svg width="54" height="54" viewBox="0 0 54 54">
+        <circle class="ring-bg" cx="27" cy="27" r="23"/>
+        <circle class="ring-fill" id="ring-2" cx="27" cy="27" r="23" stroke-dasharray="144.5" stroke-dashoffset="144.5"/>
+      </svg>
+      <div class="ring-text" id="ring-text-2">0/8</div>
+    </div>
+  </div>
+  <div class="day-done-banner" id="done-2"><h3>🔥 ¡Día completado!</h3><p>Buen trabajo. Descansa y recupera.</p></div>
+  <div id="week-bar-2" class="week-info-bar">
+    <span class="week-badge">S1</span>
+    <p id="week-desc-2">Encuentra tus pesos base. Prioriza técnica sobre carga.</p>
+  </div>
+  <div id="ejs-2"></div>
+  <button class="reset-btn" onclick="resetDay(2)">↺ Reiniciar día</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     DÍA 4: PUSH
+════════════════════════════════════════════════════════ -->
+<div class="day-page" id="page-3">
+  <div class="day-header" style="background:linear-gradient(135deg,#4A148C,#6A1B9A)">
+    <div class="day-header-left">
+      <h2>🔛 PUSH</h2>
+      <p>Pecho · Hombros · Tríceps</p>
+    </div>
+    <div class="day-progress-ring">
+      <svg width="54" height="54" viewBox="0 0 54 54">
+        <circle class="ring-bg" cx="27" cy="27" r="23"/>
+        <circle class="ring-fill" id="ring-3" cx="27" cy="27" r="23" stroke-dasharray="144.5" stroke-dashoffset="144.5"/>
+      </svg>
+      <div class="ring-text" id="ring-text-3">0/7</div>
+    </div>
+  </div>
+  <div class="day-done-banner" id="done-3"><h3>🔥 ¡Día completado!</h3><p>Buen trabajo. Descansa y recupera.</p></div>
+  <div id="week-bar-3" class="week-info-bar">
+    <span class="week-badge">S1</span>
+    <p id="week-desc-3">Encuentra tus pesos base. Prioriza técnica sobre carga.</p>
+  </div>
+  <div id="ejs-3"></div>
+  <button class="reset-btn" onclick="resetDay(3)">↺ Reiniciar día</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     DÍA 5: LEG B
+════════════════════════════════════════════════════════ -->
+<div class="day-page" id="page-4">
+  <div class="day-header" style="background:linear-gradient(135deg,#004D40,#00838F)">
+    <div class="day-header-left">
+      <h2>🦵 LEG B</h2>
+      <p>Pantorrillas · Cuádriceps · Isquios</p>
+    </div>
+    <div class="day-progress-ring">
+      <svg width="54" height="54" viewBox="0 0 54 54">
+        <circle class="ring-bg" cx="27" cy="27" r="23"/>
+        <circle class="ring-fill" id="ring-4" cx="27" cy="27" r="23" stroke-dasharray="144.5" stroke-dashoffset="144.5"/>
+      </svg>
+      <div class="ring-text" id="ring-text-4">0/6</div>
+    </div>
+  </div>
+  <div class="day-done-banner" id="done-4"><h3>🔥 ¡Día completado!</h3><p>Buen trabajo. Descansa y recupera.</p></div>
+  <div id="week-bar-4" class="week-info-bar">
+    <span class="week-badge">S1</span>
+    <p id="week-desc-4">Encuentra tus pesos base. Prioriza técnica sobre carga.</p>
+  </div>
+  <div id="ejs-4"></div>
+  <button class="reset-btn" onclick="resetDay(4)">↺ Reiniciar día</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     INFO / GLOSARIO
+════════════════════════════════════════════════════════ -->
+<div class="day-page" id="page-5">
+  <div class="day-header" style="background:linear-gradient(135deg,#1A1A1A,#333)">
+    <div class="day-header-left">
+      <h2>📖 INFO</h2>
+      <p>Glosario · Progresión · Notas</p>
+    </div>
+  </div>
+  <div class="glosario-section">
+    <p class="glosario-title">Glosario</p>
+    <div class="glos-item"><span class="glos-term">Top Set</span><span class="glos-def">La serie más pesada e importante. Máximo esfuerzo con buena técnica.</span></div>
+    <div class="glos-item"><span class="glos-term">Back Off</span><span class="glos-def">Series secundarias con menos peso pero más reps tras el Top Set.</span></div>
+    <div class="glos-item"><span class="glos-term">RIR 0</span><span class="glos-def">No te queda ninguna rep más. Estás al límite.</span></div>
+    <div class="glos-item"><span class="glos-term">RIR 1</span><span class="glos-def">Te queda 1 rep más en el tanque.</span></div>
+    <div class="glos-item"><span class="glos-term">RIR 2</span><span class="glos-def">Te quedan 2 reps. Esfuerzo moderado-alto.</span></div>
+    <div class="glos-item"><span class="glos-term">Fallo</span><span class="glos-def">Entrenas hasta no poder completar la siguiente rep.</span></div>
+    <div class="glos-item"><span class="glos-term">Rest Pause</span><span class="glos-def">Al terminar la última serie → descansas 30 seg → 1 serie más al fallo con el mismo peso.</span></div>
+    <div class="glos-item"><span class="glos-term">Descarga</span><span class="glos-def">Cada 6-8 semanas: misma rutina, mitad del peso, sin ejercicios accesorios.</span></div>
+  </div>
+
+  <p class="glosario-title" style="margin-top:14px">Progresión</p>
+  <div class="glos-item" style="display:block">
+    <p style="font-size:12px;color:rgba(255,255,255,0.65);line-height:1.6">
+      Cuando completes <strong style="color:var(--white)">todas las reps</strong> indicadas con buena técnica
+      → sube <strong style="color:var(--red)">5 lbs (~2.5 kg)</strong> la siguiente sesión.<br><br>
+      Si fallas en hacer el mínimo de reps <strong style="color:var(--white)">2 sesiones seguidas</strong>
+      → baja el peso un poco y vuelve a construir.<br><br>
+      <strong style="color:var(--white)">Días de fuerza:</strong> movimiento lento y controlado. Baja en 2-3 seg, sube en 1 seg.<br>
+      <strong style="color:var(--white)">Días de hipertrofia:</strong> pesos moderados, velocidad más rápida.
+    </p>
+  </div>
+
+  <p class="glosario-title" style="margin-top:14px">Calentamiento</p>
+  <div class="glos-item" style="display:block">
+    <p style="font-size:12px;color:rgba(255,255,255,0.65);line-height:1.6">
+      5 min caminata en banda <strong style="color:var(--white)">ó</strong> secuencia de movilidad:<br>
+      Squat · Rotación externa/interna · 90/90 Hips · Scorpion Kicks · Downward Dog · Cat Cows · Scapula Push-Ups · Table Rocks<br>
+      → <strong style="color:var(--red)">10 reps cada uno, pausado.</strong>
+    </p>
+  </div>
+
+  <p class="glosario-title" style="margin-top:14px">Plan nutricional</p>
+  <div class="glos-item" style="display:block">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;text-align:center;margin-bottom:8px">
+      <div><p style="font-size:20px;font-family:'Barlow Condensed',sans-serif;font-weight:800;color:var(--white)">2400</p><p style="font-size:10px;color:var(--gray)">kcal entreno</p></div>
+      <div><p style="font-size:20px;font-family:'Barlow Condensed',sans-serif;font-weight:800;color:#E74C3C">135g</p><p style="font-size:10px;color:var(--gray)">proteína</p></div>
+      <div><p style="font-size:20px;font-family:'Barlow Condensed',sans-serif;font-weight:800;color:#F39C12">348g</p><p style="font-size:10px;color:var(--gray)">carbos</p></div>
+      <div><p style="font-size:20px;font-family:'Barlow Condensed',sans-serif;font-weight:800;color:#2ECC71">52g</p><p style="font-size:10px;color:var(--gray)">grasas</p></div>
+    </div>
+    <p style="font-size:11px;color:var(--gray);text-align:center">Día descanso: 2200 kcal · P135 · C298 · G52</p>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// ── DATOS ─────────────────────────────────────────────────────────────────────
+const DIAS = [
+  {
+    id: 0,
+    ejercicios: [
+      { nombre: "Remo barra Smith", reps: "Top Set: 5-6 reps · Back Off: 6-8 reps",
+        series: [["S1","1x Top(RIR1) / 2x BO(RIR1)"],["S2","1x Top(RIR1) / 1x BO(RIR1) / 1x BO(RIR0)"],["S3","1x Top(RIR1) / 2x BO(RIR0)"],["S4","1x Top(RIR0) / 2x BO(RIR0)"],["S5-6","1x Top(RIR0) / 2x BO(RIR0)"],["Desc","1x Top(RIR3) / 1x BO(RIR2)"]],
+        tip: "Video: Remo barra Smith. Mantén el pecho orgulloso y los codos cerca del cuerpo." },
+      { nombre: "Press banca plano con barra", reps: "Top Set: 5-6 reps · Back Off: 6-8 reps",
+        series: [["S1","1x Top(RIR2) / 1x BO(RIR2)"],["S2","1x Top(RIR2) / 1x BO(RIR1)"],["S3","1x Top(RIR1) / 1x BO(RIR1)"],["S4","1x Top(RIR1) / 1x BO(RIR1)"],["S5-6","1x Top(RIR1) / 1x BO(RIR0)"],["Desc","1x Top(RIR3) / 1x BO(RIR2)"]],
+        tip: "Baja en 2-3 seg, sube explosivo. Retrae escápulas antes de bajar la barra." },
+      { nombre: "Jalón unilateral polea alta (banco 60°)", reps: "8-10 reps",
+        series: [["S1","2x(RIR1) + RP última"],["S2","2x(RIR1/0) + RP"],["S3","1x(RIR1)/2x(RIR0) + RP"],["S4","3x(RIR0) + RP"],["S5-6","3x(RIR0) + RP"],["Desc","2x(RIR2)"]],
+        tip: "Codo pegado al cuerpo. Piensa en llevar el codo al bolsillo trasero." },
+      { nombre: "Pec deck / cruces en polea", reps: "10-12 reps",
+        series: [["S1","2x(RIR1)"],["S2","1x(RIR1)/1x(RIR0)"],["S3","2x(RIR0)"],["S4","1x(RIR0)/1x(Fallo)"],["S5-6","2x(Fallo)"],["Desc","2x(RIR1)"]],
+        tip: "Contrae el pecho en el punto de cierre. No uses el hombro para completar el movimiento." },
+      { nombre: "Elevaciones laterales (banco 60°)", reps: ">12 reps",
+        series: [["S1","3x(Fallo)"],["S2","3x(Fallo)"],["S3","3x(Fallo)"],["S4","3x(Fallo)"],["S5-6","3x(Fallo)"],["Desc","2x(RIR1)"]],
+        tip: "El banco te da restricción en la posición estirada. Controla la bajada." },
+      { nombre: "Curl alterno con mancuernas", reps: "Top Set: 8-10 · Back Off: 10-12 reps",
+        series: [["S1","1x Top(RIR1) / 2x BO(RIR1)"],["S2","1x Top(RIR1) / 2x BO(RIR1)"],["S3","1x Top(RIR1) / 1x BO(RIR1/0)"],["S4","1x Top(RIR1) / 1x BO(RIR1/0)"],["S5-6","1x Top(RIR1) / 2x BO(RIR0)"],["Desc","1x Top(RIR3) / 1x BO(RIR2)"]],
+        tip: "No balancees el cuerpo. Supina la muñeca en la contracción máxima." },
+      { nombre: "Curl bayesian en polea", reps: "10-12 reps",
+        series: [["S1","3x(Fallo)"],["S2","3x(Fallo)"],["S3","3x(Fallo)"],["S4","3x(Fallo)"],["S5-6","3x(Fallo)"],["Desc","2x(RIR1)"]],
+        tip: "Mantén el codo ligeramente hacia atrás del cuerpo. Estiramiento profundo en la posición inicial." },
+      { nombre: "Press francés con mancuernas", reps: "Top Set: 8-10 · Back Off: 10-12 reps",
+        series: [["S1","1x Top(RIR1) / 2x BO(RIR1)"],["S2","1x Top(RIR1) / 2x BO(RIR1)"],["S3","1x Top(RIR1) / 1x BO(RIR1/0)"],["S4","1x Top(RIR1) / 1x BO(RIR1/0)"],["S5-6","1x Top(RIR1) / 2x BO(RIR0)"],["Desc","1x Top(RIR3) / 1x BO(RIR2)"]],
+        tip: "Codos apuntando al techo. Baja las mancuernas a cada lado de la cabeza." },
+      { nombre: "Extensión tríceps katana en polea baja", reps: "8-10 reps",
+        series: [["S1","2x(RIR1)/1x(RIR0) + RP"],["S2","1x(RIR1)/2x(RIR0) + RP"],["S3","3x(RIR0) + RP"],["S4","3x(RIR0) + 2 RP"],["S5-6","3x(RIR0) + RP x2"],["Desc","2x(RIR2)"]],
+        tip: "Agarra la muñequera como si fuera una katana. El codo es el pivote fijo." },
+      { nombre: "Cable crunch (abdomen)", reps: "Rango con progresión de RIR",
+        series: [["S1","3x(RIR2) + RP"],["S2","2x(RIR2)/1x(RIR1) + RP"],["S3","1x(RIR2)/2x(RIR1) + RP"],["S4","1x(RIR2)/1x(RIR1)/1x(RIR0) + RP"],["S5-6","2x(RIR1)/1x(RIR0) + RP"],["Desc","2x(RIR2)"]],
+        tip: "No jales con los brazos. El movimiento viene del abdomen. Rodillas en el suelo, contrae fuerte abajo." },
+    ]
+  },
+  {
+    id: 1,
+    ejercicios: [
+      { nombre: "Elevaciones de talones en máquina", reps: "12-15 reps",
+        series: [["S1","3x(RIR1) + RP"],["S2","2x(RIR1)/1x(RIR0) + RP"],["S3","1x(RIR1)/2x(RIR0) + RP"],["S4","3x(RIR0) + RP"],["S5-6","3x(RIR0) + RP"],["Desc","2x(RIR2)"]],
+        tip: "Rango completo: talón abajo, punta arriba. Pausa de 1 seg arriba." },
+      { nombre: "Aducción de cadera en máquina", reps: "12-15 reps",
+        series: [["S1","2x(RIR1)"],["S2","1x(RIR1)/1x(RIR0)"],["S3","2x(RIR0)"],["S4","1x(RIR0)/1x(Fallo)"],["S5-6","2x(Fallo) + RP"],["Desc","2x(RIR2)"]],
+        tip: "Controla el regreso. No dejes que las palancas te arrastren de vuelta." },
+      { nombre: "Sentadilla libre / Smith", reps: "Top Set: 7-11 · Back Off: 11-13 reps",
+        series: [["S1","1x Top(RIR2) / 1x BO(RIR2)"],["S2","1x Top(RIR2) / 1x BO(RIR1)"],["S3","1x Top(RIR1) / 1x BO(RIR1)"],["S4","1x Top(RIR1) / 1x BO(RIR1)"],["S5-6","1x Top(RIR1) / 1x BO(RIR0)"],["Desc","1x Top(RIR3) / 1x BO(RIR2)"]],
+        tip: "Rodillas siguen la línea del pie. Espalda neutra. Peso en los talones." },
+      { nombre: "Extensión de rodilla en máquina", reps: "12-15 reps",
+        series: [["S1","2x(RIR1)"],["S2","1x(RIR1)/1x(RIR0)"],["S3","2x(RIR0)"],["S4","1x(RIR0)/1x(Fallo)"],["S5-6","2x(Fallo)"],["Desc","2x(RIR1)"]],
+        tip: "Pausa de 1 seg con la rodilla extendida. Contrae el cuádriceps completamente." },
+      { nombre: "Curl femoral en máquina", reps: "12-15 reps",
+        series: [["S1","2x(RIR1)"],["S2","1x(RIR1)/1x(RIR0)"],["S3","2x(RIR0)"],["S4","1x(RIR0)/1x(Fallo)"],["S5-6","2x(Fallo)"],["Desc","2x(RIR1)"]],
+        tip: "No levantes las caderas al subir. El movimiento es solo de la rodilla." },
+      { nombre: "Sentadilla búlgara (tronco inclinado - glúteo)", reps: "Top Set: 6-8 · Back Off: 8-10 reps",
+        series: [["S1","1x Top(RIR1) / 2x BO(RIR1)"],["S2","1x Top(RIR1) / 2x BO(RIR1)"],["S3","1x Top(RIR1) / 1x BO(RIR1/0)"],["S4","1x Top(RIR1) / 1x BO(RIR1/0)"],["S5-6","1x Top(RIR1) / 2x BO(RIR0)"],["Desc","1x Top(RIR3) / 1x BO(RIR2)"]],
+        tip: "Pie adelantado + tronco inclinado = mayor énfasis en glúteo. Rodilla trasera baja sin tocar el suelo." },
+    ]
+  },
+  {
+    id: 2,
+    ejercicios: [
+      { nombre: "Dominadas lastradas", reps: "Top Set: 4-5 · Back Off: 5-9 reps",
+        series: [["S1","1x Top(RIR1) / 2x BO(RIR1)"],["S2","1x Top(RIR1) / 2x BO(RIR1)"],["S3","1x Top(RIR1) / 1x BO(RIR1/0)"],["S4","1x Top(RIR1) / 1x BO(RIR1/0)"],["S5-6","1x Top(RIR1) / 2x BO(RIR0)"],["Desc","1x Top(RIR3) / 1x BO(RIR2)"]],
+        tip: "Deprime las escápulas antes de tirar. Codos al bolsillo. Extensión completa abajo." },
+      { nombre: "Remo horizontal unilateral en polea baja", reps: "Top Set: 8-10 · Back Off: 10-15 reps",
+        series: [["S1","1x Top(RIR1) / 1x BO(RIR1)"],["S2","1x Top(RIR1) / 1x BO(RIR1)"],["S3","1x Top(RIR1) / 1x BO(RIR0)"],["S4","1x Top(RIR1) / 1x BO(RIR0)"],["S5-6","1x Top(RIR0) / 1x BO(RIR0)"],["Desc","1x Top(RIR3) / 1x BO(RIR2)"]],
+        tip: "Unilateral = mayor rango de movimiento y mejor conexión mente-músculo." },
+      { nombre: "Pullover unilateral en polea alta", reps: "10-15 reps",
+        series: [["S1","2x(Fallo) + RP"],["S2","2x(Fallo) + RP"],["S3","2x(Fallo) + RP"],["S4","2x(Fallo) + RP"],["S5-6","2x(Fallo) + RP"],["Desc","2x(RIR2)"]],
+        tip: "Brazo casi recto. El movimiento viene del dorsal, no del hombro." },
+      { nombre: "Reverse flye (deltoides posterior)", reps: "12-15 reps",
+        series: [["S1","2x(Fallo) + RP"],["S2","2x(Fallo) + RP"],["S3","2x(Fallo) + RP"],["S4","2x(Fallo) + RP"],["S5-6","2x(Fallo) + RP"],["Desc","2x(RIR2)"]],
+        tip: "Codos ligeramente doblados. Piensa en juntar los omóplatos atrás." },
+      { nombre: "Curl bilateral con mancuernas", reps: "Top Set: 8-10 · Back Off: 10-12 reps",
+        series: [["S1","1x Top(RIR1) / 2x BO(RIR1)"],["S2","1x Top(RIR1) / 2x BO(RIR1)"],["S3","1x Top(RIR1) / 1x BO(RIR1/0)"],["S4","1x Top(RIR1) / 1x BO(RIR1/0)"],["S5-6","1x Top(RIR1) / 2x BO(RIR0)"],["Desc","1x Top(RIR3) / 1x BO(RIR2)"]],
+        tip: "Supina al subir. Codos fijos al cuerpo en todo momento." },
+      { nombre: "Curl unilateral en banco Scott", reps: "10-12 reps",
+        series: [["S1","2x(RIR1)"],["S2","1x(RIR1)/1x(RIR0)"],["S3","2x(RIR0)"],["S4","1x(RIR0)/1x(Fallo)"],["S5-6","2x(Fallo) + RP"],["Desc","2x(RIR2)"]],
+        tip: "El banco Scott elimina el truco del cuerpo. Puro bíceps." },
+      { nombre: "Curl bayesian en polea", reps: "10-12 reps",
+        series: [["S1","2x(Fallo)"],["S2","2x(Fallo)"],["S3","2x(Fallo)"],["S4","2x(Fallo)"],["S5-6","2x(Fallo)"],["Desc","2x(RIR2)"]],
+        tip: "Codo ligeramente detrás del cuerpo para máximo estiramiento del bíceps." },
+      { nombre: "Reverse crunch en banco (abdomen)", reps: "Rango con progresión de RIR",
+        series: [["S1","3x(RIR2) + RP"],["S2","2x(RIR2)/1x(RIR1) + RP"],["S3","1x(RIR2)/2x(RIR1) + RP"],["S4","1x(RIR2)/1x(RIR1)/1x(RIR0) + RP"],["S5-6","2x(RIR1)/1x(RIR0) + RP"],["Desc","2x(RIR2)"]],
+        tip: "Pelvis se inclina hacia el abdomen. No uses impulso." },
+    ]
+  },
+  {
+    id: 3,
+    ejercicios: [
+      { nombre: "Press inclinado con mancuernas", reps: "Top Set: 6-8 · Back Off: 8-10 reps",
+        series: [["S1","1x Top(RIR1) / 2x BO(RIR1)"],["S2","1x Top(RIR1) / 2x BO(RIR1)"],["S3","1x Top(RIR1) / 1x BO(RIR1/0)"],["S4","1x Top(RIR1) / 1x BO(RIR1/0)"],["S5-6","1x Top(RIR1) / 2x BO(RIR0)"],["Desc","1x Top(RIR3) / 1x BO(RIR2)"]],
+        tip: "Banco a ~30-45°. Mancuernas ligeramente hacia afuera. Lleva los codos hacia abajo y afuera." },
+      { nombre: "Press plano con mancuernas", reps: "Top Set: 6-8 · Back Off: 8-10 reps",
+        series: [["S1","1x Top(RIR1) / 1x BO(RIR1)"],["S2","1x Top(RIR1) / 1x BO(RIR1)"],["S3","1x Top(RIR1) / 1x BO(RIR0)"],["S4","1x Top(RIR1) / 1x BO(RIR0)"],["S5-6","1x Top(RIR0) / 1x BO(RIR0)"],["Desc","2x(RIR2)"]],
+        tip: "Mayor rango que con barra. Baja controlado, empuja explosivo." },
+      { nombre: "Cruces en polea (pecho)", reps: "10-12 reps",
+        series: [["S1","2x(RIR1) + RP"],["S2","2x(RIR1/0) + RP"],["S3","1x(RIR1)/2x(RIR0) + RP"],["S4","3x(RIR0) + RP"],["S5-6","3x(RIR0) + RP"],["Desc","2x(RIR2)"]],
+        tip: "Contrae fuerte en el punto de cierre. Mantén un arco suave en el codo." },
+      { nombre: "Press militar en máquina (banco 75°)", reps: "Top Set: 8-10 · Back Off: 10-12 reps",
+        series: [["S1","1x Top(RIR1) / 1x BO(RIR1)"],["S2","1x Top(RIR1) / 1x BO(RIR1)"],["S3","1x Top(RIR1) / 1x BO(RIR0)"],["S4","1x Top(RIR1) / 1x BO(RIR0)"],["S5-6","1x Top(RIR0) / 1x BO(RIR0)"],["Desc","1x Top(RIR3) / 1x BO(RIR2)"]],
+        tip: "75° de inclinación = mayor énfasis en deltoides anterior. No hiperextiendas la espalda." },
+      { nombre: "Elevaciones laterales en polea cruzada (cadera)", reps: "12-15 reps",
+        series: [["S1","3x(Fallo)"],["S2","3x(Fallo)"],["S3","3x(Fallo)"],["S4","3x(Fallo)"],["S5-6","3x(Fallo)"],["Desc","2x(RIR1)"]],
+        tip: "La polea desde la cadera da tensión en todo el rango. Codo ligeramente doblado." },
+      { nombre: "Press francés en el suelo con mancuernas", reps: "Top Set: 8-10 · Back Off: 10-12 reps",
+        series: [["S1","1x Top(RIR1) / 2x BO(RIR1)"],["S2","1x Top(RIR1) / 2x BO(RIR1)"],["S3","1x Top(RIR1) / 1x BO(RIR1/0)"],["S4","1x Top(RIR1) / 1x BO(RIR1/0)"],["S5-6","1x Top(RIR1) / 2x BO(RIR0)"],["Desc","1x Top(RIR3) / 1x BO(RIR2)"]],
+        tip: "En el suelo = rango limitado pero mayor seguridad en el codo. Codos fijos." },
+      { nombre: "Extensión tríceps katana en polea baja", reps: "8-10 reps",
+        series: [["S1","3x(RIR1) + RP"],["S2","2x(RIR1)/1x(RIR0) + RP"],["S3","1x(RIR1)/2x(RIR0) + RP"],["S4","3x(RIR0) + RP"],["S5-6","3x(RIR0) + RP"],["Desc","2x(RIR2)"]],
+        tip: "Agarra la muñequera como katana. Cuerpo ligeramente inclinado, codo fijo." },
+    ]
+  },
+  {
+    id: 4,
+    ejercicios: [
+      { nombre: "Elevaciones de talones en máquina", reps: "12-15 reps",
+        series: [["S1","3x(RIR1) + RP"],["S2","2x(RIR1)/1x(RIR0) + RP"],["S3","1x(RIR1)/2x(RIR0) + RP"],["S4","3x(RIR0) + RP"],["S5-6","3x(RIR0) + RP"],["Desc","2x(RIR2)"]],
+        tip: "Rango completo: talón abajo, punta arriba. Pausa de 1 seg arriba." },
+      { nombre: "Aducción de cadera en máquina", reps: "12-15 reps",
+        series: [["S1","2x(RIR1)"],["S2","1x(RIR1)/1x(RIR0)"],["S3","2x(RIR0)"],["S4","1x(RIR0)/1x(Fallo)"],["S5-6","2x(Fallo) + RP"],["Desc","2x(RIR2)"]],
+        tip: "Controla el regreso. No dejes que las palancas te arrastren." },
+      { nombre: "Prensa a 45°", reps: "Top Set: 8-10 · Back Off: 10-14 reps",
+        series: [["S1","1x Top(RIR1) / 2x BO(RIR1)"],["S2","1x Top(RIR1) / 2x BO(RIR1)"],["S3","1x Top(RIR1) / 1x BO(RIR1/0)"],["S4","1x Top(RIR1) / 1x BO(RIR1/0)"],["S5-6","1x Top(RIR1) / 2x BO(RIR0)"],["Desc","1x Top(RIR3) / 1x BO(RIR2)"]],
+        tip: "Pies separados al ancho de hombros. No bloquees las rodillas arriba." },
+      { nombre: "Extensión de rodilla en máquina", reps: "12-15 reps",
+        series: [["S1","2x(RIR1)"],["S2","1x(RIR1)/1x(RIR0)"],["S3","2x(RIR0)"],["S4","1x(RIR0)/1x(Fallo)"],["S5-6","2x(Fallo)"],["Desc","2x(RIR1)"]],
+        tip: "Pausa arriba. Contrae el cuádriceps en la extensión completa." },
+      { nombre: "Curl femoral en máquina", reps: "12-15 reps",
+        series: [["S1","2x(RIR1)"],["S2","1x(RIR1)/1x(RIR0)"],["S3","2x(RIR0)"],["S4","1x(RIR0)/1x(Fallo)"],["S5-6","2x(Fallo)"],["Desc","2x(RIR1)"]],
+        tip: "No levantes las caderas. Fuerza isquiotibial pura." },
+      { nombre: "RDL con mancuernas", reps: "Top Set: 8-10 · Back Off: 10-12 reps",
+        series: [["S1","1x Top(RIR1) / 2x BO(RIR1)"],["S2","1x Top(RIR1) / 2x BO(RIR1)"],["S3","1x Top(RIR1) / 1x BO(RIR1/0)"],["S4","1x Top(RIR1) / 1x BO(RIR1/0)"],["S5-6","1x Top(RIR1) / 2x BO(RIR0)"],["Desc","1x Top(RIR3) / 1x BO(RIR2)"]],
+        tip: "Bisagra de cadera. Espalda plana, mancuernas cerca de las piernas, sientes el estiramiento en isquios." },
+    ]
+  }
+];
+
+const WEEK_LABELS = ["Semana 1","Semana 2","Semana 3","Semana 4","Semanas 5-6","Descarga"];
+const WEEK_DESCS = [
+  "Encuentra tus pesos base. Prioriza técnica sobre carga.",
+  "Ajusta intensidad. Empieza a acercarte al límite.",
+  "Incrementa el esfuerzo. Llega a los RIR objetivo.",
+  "Máxima intensidad. Pocas reps en reserva.",
+  "Máximo esfuerzo sostenido. Ya conoces tus pesos.",
+  "Mitad del peso habitual. Sin ejercicios accesorios. Recuperación activa.",
+];
+const DAY_COLORS = ["#C0392B","#1565C0","#2E7D32","#6A1B9A","#00838F"];
+const CIRCUMFERENCE = 2 * Math.PI * 23; // ~144.5
+
+// ── STATE ──────────────────────────────────────────────────────────────────────
+let currentDay = 0;
+let currentWeek = parseInt(localStorage.getItem('rw') || '0');
+let checked = JSON.parse(localStorage.getItem('rc') || '{}');
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+function init() {
+  document.getElementById('week-select').value = currentWeek;
+  DIAS.forEach(dia => renderDay(dia));
+  updateAllTabs();
+  updateWeekBars();
+}
+
+function renderDay(dia) {
+  const container = document.getElementById(`ejs-${dia.id}`);
+  container.innerHTML = '';
+  dia.ejercicios.forEach((ej, idx) => {
+    const key = `${dia.id}-${idx}`;
+    const isChecked = !!checked[key];
+    const serieRow = ej.series[Math.min(currentWeek, ej.series.length - 1)];
+    const card = document.createElement('div');
+    card.className = `ej-card${isChecked ? ' checked' : ''}`;
+    card.id = `card-${dia.id}-${idx}`;
+    card.style.animationDelay = `${idx * 0.04}s`;
+    card.innerHTML = `
+      <div class="ej-header" onclick="toggleCard(${dia.id},${idx})">
+        <div class="ej-num">${idx + 1}</div>
+        <div class="ej-info">
+          <div class="ej-name">${ej.nombre}</div>
+          <div class="ej-reps">${ej.reps}</div>
+        </div>
+        <span class="ej-expand">▼</span>
+        <div class="ej-check" onclick="event.stopPropagation();toggleCheck(${dia.id},${idx})">
+          <svg class="ej-check-icon" width="12" height="12" viewBox="0 0 12 12">
+            <polyline points="1.5,6 4.5,9 10.5,3" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="ej-detail">
+        <table class="series-table">
+          <thead><tr><th>Semana</th><th>Series / Intensidad</th></tr></thead>
+          <tbody>
+            ${ej.series.map((s,i) => `
+              <tr style="${i === currentWeek ? `background:rgba(230,57,70,0.07)` : ''}">
+                <td class="serie-label" style="${i === currentWeek ? `color:var(--red)` : ''}">${s[0]}${i === currentWeek ? ' ◀' : ''}</td>
+                <td>${s[1]}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+        ${ej.tip ? `<div class="tip-box"><strong>💡 Tip</strong>${ej.tip}</div>` : ''}
+      </div>`;
+    container.appendChild(card);
+  });
+  updateRing(dia.id);
+}
+
+function toggleCard(dayId, ejIdx) {
+  const card = document.getElementById(`card-${dayId}-${ejIdx}`);
+  card.classList.toggle('open');
+}
+
+function toggleCheck(dayId, ejIdx) {
+  const key = `${dayId}-${ejIdx}`;
+  checked[key] = !checked[key];
+  localStorage.setItem('rc', JSON.stringify(checked));
+  const card = document.getElementById(`card-${dayId}-${ejIdx}`);
+  card.classList.toggle('checked', !!checked[key]);
+  updateRing(dayId);
+  updateTabDone(dayId);
+}
+
+function updateRing(dayId) {
+  const dia = DIAS[dayId];
+  const total = dia.ejercicios.length;
+  const done = dia.ejercicios.filter((_, i) => checked[`${dayId}-${i}`]).length;
+  const offset = CIRCUMFERENCE * (1 - done / total);
+  document.getElementById(`ring-${dayId}`).style.strokeDashoffset = offset;
+  document.getElementById(`ring-text-${dayId}`).textContent = `${done}/${total}`;
+  const banner = document.getElementById(`done-${dayId}`);
+  if (banner) banner.classList.toggle('show', done === total);
+}
+
+function updateAllTabs() {
+  DIAS.forEach(d => updateTabDone(d.id));
+}
+
+function updateTabDone(dayId) {
+  const dia = DIAS[dayId];
+  const total = dia.ejercicios.length;
+  const done = dia.ejercicios.filter((_, i) => checked[`${dayId}-${i}`]).length;
+  const tab = document.getElementById(`tab-${dayId}`);
+  tab.classList.toggle('done-tab', done === total);
+}
+
+function showDay(dayId) {
+  document.querySelectorAll('.day-page').forEach((p,i) => p.classList.toggle('active', i === dayId));
+  document.querySelectorAll('.day-tab').forEach((t,i) => {
+    t.classList.toggle('active', i === dayId);
+    if (i === dayId && i < 5) {
+      t.style.background = DAY_COLORS[i] || '#333';
+    } else if (!t.classList.contains('active')) {
+      t.style.background = '';
+    }
+  });
+  document.getElementById('main').scrollTop = 0;
+  currentDay = dayId;
+}
+
+function setWeek(val) {
+  currentWeek = parseInt(val);
+  localStorage.setItem('rw', currentWeek);
+  DIAS.forEach(dia => renderDay(dia));
+  updateWeekBars();
+}
+
+function updateWeekBars() {
+  DIAS.forEach(dia => {
+    const bar = document.getElementById(`week-bar-${dia.id}`);
+    if (bar) {
+      bar.querySelector('.week-badge').textContent = WEEK_LABELS[currentWeek];
+      bar.querySelector('p').textContent = WEEK_DESCS[currentWeek];
+    }
+  });
+}
+
+function resetDay(dayId) {
+  DIAS[dayId].ejercicios.forEach((_, i) => { delete checked[`${dayId}-${i}`]; });
+  localStorage.setItem('rc', JSON.stringify(checked));
+  renderDay(DIAS[dayId]);
+  updateTabDone(dayId);
+}
+
+// Init tabs style
+document.querySelectorAll('.day-tab').forEach((t, i) => {
+  if (i < 5) t.dataset.color = DAY_COLORS[i];
+});
+
+init();
+</script>
+</body>
+</html>
